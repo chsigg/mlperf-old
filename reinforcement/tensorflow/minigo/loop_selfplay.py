@@ -118,74 +118,24 @@ def main_():
 
     _, model_name = get_latest_model()
 
-    num_workers = 0
+    # TODO: remove NUM_PARALLEL_SELFPLAY from goparams
+    cmd = [
+      "./external/com_google_minigo/cc/main",
+      "--mode=selfplay",
+      "--model={}".format(os.path.join(MODELS_DIR, model_name)),
+      "--parallel_games={}".format(MAX_GAMES_PER_GENERATION),
+      "--num_readouts={}".format(goparams.SP_READOUTS),
 
-    procs = [
+      "--output_dir={}".format(os.path.join(SELFPLAY_DIR, model_name)),
+      "--holdout_dir={}".format(os.path.join(HOLDOUT_DIR, model_name)),
+      "--holdout_pct={0:f}".format(HOLDOUT_PCT),
+      "--sgf_dir={}".format(os.path.join(SGF_DIR, model_name)),
+      "--subdir_format=",
+
+      "--virtual_losses=8" # see SIMULTANEOUS_LEAVES,
     ]
-    def count_live_procs():
-      return len(list(filter(lambda proc: proc.poll() is None, procs)))
-    def start_worker(num_workers):
-      #procs.append(subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE))
-      worker_seed = hash(hash(SEED) + ITERATION) + num_workers
-      cmd = 'GOPARAMS={} python3 selfplay_worker.py {} {}'.format(os.environ['GOPARAMS'], BASE_DIR, worker_seed)
-      procs.append(subprocess.Popen(cmd, shell=True))
-
-    selfplay_dir = os.path.join(SELFPLAY_DIR, model_name)
-    def count_games():
-      # returns number of games in the selfplay directory
-      if not os.path.exists(os.path.join(SELFPLAY_DIR, model_name)):
-        # directory not existing implies no games have been played yet
-        return 0
-      return len(gfile.Glob(os.path.join(SELFPLAY_DIR, model_name, '*.zz')))
-
-
-    for i in range(goparams.NUM_PARALLEL_SELFPLAY):
-      print('Starting Worker...')
-      num_workers += 1
-      start_worker(num_workers)
-      time.sleep(1)
-    sys.stdout.flush()
-
-    while count_games() < MAX_GAMES_PER_GENERATION:
-        time.sleep(10)
-        games = count_games()
-        print('Found Games: {}'.format(games))
-        print('selfplaying: {:.2f} games/hour'.format(games / ((time.time() - start_t) / 60 / 60) ))
-        print('Worker Processes: {}'.format(count_live_procs()))
-        sys.stdout.flush()
-
-
-    print('Done with selfplay loop.')
-
-    time.sleep(10)
-
-    for proc in procs:
-      proc.kill()
-
-    # Sometimes the workers need extra help...
-    time.sleep(5)
-    os.system('pkill -f selfplay_worker.py')
-
-    # Let things settle after we kill processes.
-    time.sleep(10)
-
-    # Because we use process level parallelism for selfpaying and we don't
-    # sync or communicate between processes, there could be too many games
-    # played (up to 1 extra game per worker process).
-    # This is a rather brutish way to ensure we train on the correct number
-    # of games...
-    print('There are {} games in the selfplay directory at {}'.format(count_games(), selfplay_dir))
-    sys.stdout.flush()
-    while count_games() > MAX_GAMES_PER_GENERATION:
-      print('Too many selfplay games ({}/{}) ... deleting one'.format(count_games(), MAX_GAMES_PER_GENERATION))
-      # This will remove exactly one game file from the selfplay directory... or
-      # so we hope :)
-      sys.stdout.flush()
-      os.system('ls {}/* -d | tail -n 1 | xargs rm'.format(selfplay_dir))
-      # unclear if this sleep is necessary...
-      time.sleep(1)
-    print('After cleanup, there are {} games in the selfplay directory at {}'.format(count_games(), selfplay_dir))
-    sys.stdout.flush()
+    print("Running", " ".join(cmd), flush=True)
+    subprocess.check_call(cmd)
 
     qmeas.stop_time('selfplay_wait')
 

@@ -6,8 +6,8 @@ http_archive(
 
 http_archive(
     name = "com_google_absl",
-    strip_prefix = "abseil-cpp-da336a84e9c1f86409b21996164ae9602b37f9ca",
-    urls = ["https://github.com/abseil/abseil-cpp/archive/da336a84e9c1f86409b21996164ae9602b37f9ca.zip"],
+    strip_prefix = "abseil-cpp-a7e522daf1ec9cda69b356472f662142dd0c1215",
+    urls = ["https://github.com/abseil/abseil-cpp/archive/a7e522daf1ec9cda69b356472f662142dd0c1215.zip"],
 )
 
 new_http_archive(
@@ -15,4 +15,38 @@ new_http_archive(
     build_file = "cc/benchmark.BUILD",
     strip_prefix = "benchmark-1.3.0",
     urls = ["https://github.com/google/benchmark/archive/v1.3.0.zip"],
+)
+
+http_archive(
+    name = "com_github_gflags_gflags",
+    strip_prefix = "gflags-e292e0452fcfd5a8ae055b59052fc041cbab4abf",
+    urls = ["https://github.com/gflags/gflags/archive/e292e0452fcfd5a8ae055b59052fc041cbab4abf.zip"],
+)
+
+# 3 changes are needed in MiniGo to allow pulling the repo directly from GitHub:
+# - Add TensorFlow repo dependency
+# - Add subdir_format flag
+# - Make //cc:main publicly visible.
+# For the latter two, see http://github.com/chsigg/minigo-1/tree/subdir_format
+# For now, we require the MiniGo repo to be cloned and prepared locally.
+local_repository(
+    name = "com_google_minigo",
+    path = "../../../../../tensorflow/minigo",
+)
+#http_archive(
+#    name = "com_google_minigo",
+#    strip_prefix = "minigo-master",
+#    urls = ["https://github.com/tensorflow/minigo/archive/master.zip"],
+#)
+
+http_archive(
+    name = "com_googlesource_code_cctz",
+    strip_prefix = "cctz-2.2",
+    urls = ["https://github.com/google/cctz/archive/v2.2.zip"],
+)
+
+http_archive(
+    name = "org_pubref_rules_protobuf",
+    strip_prefix = "rules_protobuf-0.8.2",
+    urls = ["https://github.com/pubref/rules_protobuf/archive/v0.8.2.zip"],
 )
