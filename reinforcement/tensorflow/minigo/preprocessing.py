@@ -218,7 +218,9 @@ def shuffle_tf_examples(gather_size, records_to_shuffle):
     dataset = read_tf_records(gather_size, records_to_shuffle, num_repeats=1)
     batch = dataset.make_one_shot_iterator().get_next()
     config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.01
+    # Note: This value is also used for training, because config options are
+    # initialized only once per process.
+    config.gpu_options.per_process_gpu_memory_fraction = 0.2
     sess = tf.Session(config = config)
     while True:
         try:

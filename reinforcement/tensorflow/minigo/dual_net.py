@@ -52,6 +52,8 @@ class DualNetwork():
         self.inference_input = None
         self.inference_output = None
         config = tf.ConfigProto()
+        # Note: Normal training initializes these config options during
+        # preprocessing already and the values here have no effect.
         config.gpu_options.per_process_gpu_memory_fraction = 0.2
         self.sess = tf.Session(graph=tf.Graph(), config=config)
         self.initialize_graph()
