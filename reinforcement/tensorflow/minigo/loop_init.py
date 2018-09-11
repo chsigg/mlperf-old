@@ -44,7 +44,7 @@ import qmeas
 BASE_DIR = goparams.BASE_DIR
 if os.path.isdir(BASE_DIR): # if it already exists, delete it.
     shutil.rmtree(BASE_DIR, ignore_errors=True)
-os.system('mkdir ' + BASE_DIR)
+os.makedirs(BASE_DIR)
 
 MODELS_DIR = os.path.join(BASE_DIR, 'models')
 SELFPLAY_DIR = os.path.join(BASE_DIR, 'data/selfplay')

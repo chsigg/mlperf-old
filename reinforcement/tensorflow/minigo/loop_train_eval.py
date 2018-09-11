@@ -27,6 +27,8 @@ import dual_net
 import preprocessing
 import numpy
 import random
+import subprocess
+import re
 
 import glob
 
@@ -118,7 +120,25 @@ def evaluate(prev_model, cur_model, readouts=200, verbose=1, resign_threshold=0.
     game_output_dir = os.path.join(SELFPLAY_DIR, cur_model)
     game_holdout_dir = os.path.join(HOLDOUT_DIR, cur_model)
     sgf_dir = os.path.join(SGF_DIR, cur_model)
-    cur_win_pct = main.evaluate_evenly(prev_model_save_path, cur_model_save_path, game_output_dir, readouts=readouts, games=goparams.EVAL_GAMES_PER_SIDE)
+
+    cmd = [
+      "./external/com_google_minigo/cc/main",
+      "--mode=eval_even",
+      "--engine=trt",
+      "--model={}".format(os.path.join(MODELS_DIR, prev_model_save_path)),
+      "--model_two={}".format(os.path.join(MODELS_DIR, cur_model_save_path)),
+      "--parallel_games={}".format(goparams.EVAL_GAMES_PER_SIDE),
+      "--num_readouts={}".format(readouts),
+
+       # TODO(csigg): Change output directory to 'sgf/eval'.
+      "--sgf_dir={}".format(game_output_dir),
+
+      "--virtual_losses=8",
+    ]
+    print("Running", " ".join(cmd), flush=True)
+    output = subprocess.check_output(cmd).decode("utf-8")
+    print("stdout:", output)
+    cur_win_pct = float(re.match(".* won (\d+\.\d+)% of them\.", output).group(1)) * 0.01
 
     print('Evalute Win Pct = ', cur_win_pct)
 
@@ -175,7 +195,7 @@ def bury_latest_model():
   prev_num, prev_model_name = get_latest_model()
   prev_save_file = os.path.join(MODELS_DIR, prev_model_name)
 
-  suffixes = ['.data-00000-of-00001', '.index', '.meta']
+  suffixes = ['.data-00000-of-00001', '.index', '.meta', '.uff']
   new_name = '{:06d}-continue'.format(model_num)
   new_save_file = os.path.join(MODELS_DIR, new_name)
 
@@ -244,16 +264,25 @@ def rl_loop():
 
     if goparams.EVALUATE_PUZZLES:
 
-
       qmeas.start_time('puzzle')
-      new_model_path = os.path.join(MODELS_DIR, new_model)
-      sgf_files = [
-        './benchmark_sgf/9x9_pro_YKSH.sgf',
-        './benchmark_sgf/9x9_pro_IYMD.sgf',
-        './benchmark_sgf/9x9_pro_YSIY.sgf',
-        './benchmark_sgf/9x9_pro_IYHN.sgf',
+
+      cmd = [
+        "./external/com_google_minigo/cc/main",
+        "--mode=puzzle",
+        "--engine=trt",
+        "--model={}".format(os.path.join(MODELS_DIR, new_model)),
+        "--num_readouts={}".format(1000),
+
+        "--sgf_dir={}".format("./benchmark_sgf"),
+
+        "--virtual_losses=8",
       ]
-      result, total_pct = predict_games.report_for_puzzles(new_model_path, sgf_files, 2, tries_per_move=1)
+      print("Running", " ".join(cmd), flush=True)
+      output = subprocess.check_output(cmd).decode("utf-8")
+      print("stdout:", output)
+      total_pct = float(re.match("Solved \d+ of \d+ puzzles \((\d+\.\d+)%\)\.", output).group(1)) * 0.01;
+      result = []
+
       print('accuracy = ', total_pct)
       qmeas.record('puzzle_total', total_pct)
       qmeas.record('puzzle_result', repr(result))

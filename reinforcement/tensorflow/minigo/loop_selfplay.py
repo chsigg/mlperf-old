@@ -135,7 +135,7 @@ def main_():
       "--virtual_losses=8" # see SIMULTANEOUS_LEAVES,
     ]
     print("Running", " ".join(cmd), flush=True)
-    subprocess.check_call(cmd)
+    subprocess.check_output(cmd)
 
     qmeas.stop_time('selfplay_wait')
 

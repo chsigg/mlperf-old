@@ -29,6 +29,7 @@ import gzip
 import numpy as np
 import tensorflow as tf
 from tensorflow import gfile
+import uff
 
 import go
 import dual_net
@@ -330,6 +331,8 @@ def freeze_graph(load_file):
         n.sess, n.sess.graph.as_graph_def(), outputs)
     with gfile.GFile(os.path.join(load_file + '.pb'), 'wb') as f:
         f.write(out_graph.SerializeToString())
+    with gfile.GFile(os.path.join(load_file + '.uff'), 'wb') as f:
+        f.write(uff.from_tensorflow(out_graph, outputs))
 
 
 parser = argparse.ArgumentParser()

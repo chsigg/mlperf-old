@@ -50,3 +50,7 @@ http_archive(
     strip_prefix = "rules_protobuf-0.8.2",
     urls = ["https://github.com/pubref/rules_protobuf/archive/v0.8.2.zip"],
 )
+
+load("@com_google_minigo//cc:cuda_configure.bzl", "cuda_configure")
+
+cuda_configure(name = "local_config_cuda")

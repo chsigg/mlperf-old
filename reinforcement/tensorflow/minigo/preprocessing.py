@@ -109,7 +109,7 @@ def batch_parse_tf_example(batch_size, example_batch):
 
 def read_tf_records(batch_size, tf_records, num_repeats=None,
                     shuffle_records=True, shuffle_examples=True,
-                    shuffle_buffer_size=None,
+                    shuffle_buffer_size=None, sloppy_interleave=True,
                     filter_amount=1.0):
     '''
     Args:
@@ -136,10 +136,15 @@ def read_tf_records(batch_size, tf_records, num_repeats=None,
     #   moving to the next file
     # The idea is to shuffle both the order of the files being read,
     # and the examples being read from the files.
-    dataset = record_list.interleave(lambda x:
-                                     tf.data.TFRecordDataset(
-                                         x, compression_type='ZLIB'),
-                                     cycle_length=64, block_length=16)
+    if sloppy_interleave:
+        dataset = record_list.apply(tf.contrib.data.parallel_interleave(
+            functools.partial(tf.data.TFRecordDataset, buffer_size=8*1024*1024, compression_type='ZLIB'),
+            cycle_length=64, block_length=16, sloppy=True))
+    else:
+        dataset = record_list.interleave(lambda x:
+                                         tf.data.TFRecordDataset(
+                                             x, compression_type='ZLIB'),
+                                         cycle_length=64, block_length=16)
     dataset = dataset.filter(lambda x: tf.less(
         tf.random_uniform([1]), filter_amount)[0])
     # TODO(amj): apply py_func for transforms here.
@@ -212,7 +217,9 @@ def shuffle_tf_examples(gather_size, records_to_shuffle):
     '''
     dataset = read_tf_records(gather_size, records_to_shuffle, num_repeats=1)
     batch = dataset.make_one_shot_iterator().get_next()
-    sess = tf.Session()
+    config = tf.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = 0.01
+    sess = tf.Session(config = config)
     while True:
         try:
             result = sess.run(batch)
