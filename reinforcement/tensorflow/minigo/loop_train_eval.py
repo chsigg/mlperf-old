@@ -124,7 +124,6 @@ def evaluate(prev_model, cur_model, readouts=200, verbose=1, resign_threshold=0.
     cmd = [
       "./external/com_google_minigo/cc/main",
       "--mode=eval_even",
-      "--engine=trt",
       "--model={}".format(os.path.join(MODELS_DIR, prev_model_save_path)),
       "--model_two={}".format(os.path.join(MODELS_DIR, cur_model_save_path)),
       "--parallel_games={}".format(goparams.EVAL_GAMES_PER_SIDE),
@@ -137,8 +136,8 @@ def evaluate(prev_model, cur_model, readouts=200, verbose=1, resign_threshold=0.
     ]
     print("Running", " ".join(cmd), flush=True)
     output = subprocess.check_output(cmd).decode("utf-8")
-    print("stdout:", output)
-    cur_win_pct = float(re.match(".* won (\d+\.\d+)% of them\.", output).group(1)) * 0.01
+    print("stdout:", output.splitlines()[-2:])
+    cur_win_pct = float(re.search("{} won (\d+\.\d+)% of them\.".format(cur_model), output).group(1)) * 0.01
 
     print('Evalute Win Pct = ', cur_win_pct)
 
@@ -195,7 +194,7 @@ def bury_latest_model():
   prev_num, prev_model_name = get_latest_model()
   prev_save_file = os.path.join(MODELS_DIR, prev_model_name)
 
-  suffixes = ['.data-00000-of-00001', '.index', '.meta', '.uff']
+  suffixes = ['.data-00000-of-00001', '.index', '.meta', '.pb', '.uff']
   new_name = '{:06d}-continue'.format(model_num)
   new_save_file = os.path.join(MODELS_DIR, new_name)
 
@@ -269,7 +268,6 @@ def rl_loop():
       cmd = [
         "./external/com_google_minigo/cc/main",
         "--mode=puzzle",
-        "--engine=trt",
         "--model={}".format(os.path.join(MODELS_DIR, new_model)),
         "--num_readouts={}".format(1000),
 
@@ -279,8 +277,8 @@ def rl_loop():
       ]
       print("Running", " ".join(cmd), flush=True)
       output = subprocess.check_output(cmd).decode("utf-8")
-      print("stdout:", output)
-      total_pct = float(re.match("Solved \d+ of \d+ puzzles \((\d+\.\d+)%\)\.", output).group(1)) * 0.01;
+      print("stdout:", output.splitlines()[-1])
+      total_pct = float(re.search("Solved \d+ of \d+ puzzles \((\d+\.\d+)%\)\.", output).group(1)) * 0.01;
       result = []
 
       print('accuracy = ', total_pct)
