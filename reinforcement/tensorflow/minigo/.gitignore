@@ -22,3 +22,5 @@ staging/
 
 bazel-*
 cc/tensorflow/
+
+.bazelrc
