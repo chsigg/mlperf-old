@@ -1,1 +1,3 @@
 import %workspace%/tools/minigo_bazel.rc
+import %workspace%/tools/tf_bazel.rc
+import %workspace%/tools/tf_configure.rc
