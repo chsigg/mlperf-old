@@ -6,6 +6,11 @@
 
 set -e
 
+# build first to exclude from timing.
+cd minigo
+bazel build -c opt //:loop_main
+cd ..
+
 # start timing
 start=$(date +%s)
 start_fmt=$(date +%Y-%m-%d\ %r)
